@@ -13,10 +13,12 @@ local config = {
 M.settings = {
 	remote_user = "devuser",
 	remote_host = "127.0.0.1",
-	remote_port = 6666,
+	remote_port = 6667,
+	tunnel_port = 9999,
 	auto_connect = false,
 	reconnect_interval = 15000,
-	remote_project_path = "~/projects/", -- Configure the path to the project folder
+	remote_project_path = "~/projects", -- Configure the path to the project folder
+	master_socket_path = nil,
 }
 
 function M.get(key)
