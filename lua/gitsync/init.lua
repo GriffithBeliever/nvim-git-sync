@@ -34,6 +34,13 @@ function M.match()
 	end
 end
 
+--- Sync local project to remote
+function M.sync_project()
+	if tunnel.is_open() then
+		sync.sync_project()
+	end
+end
+
 --- Check Connection to remote
 function M.is_connected()
 	return connection.check_remote_alive()

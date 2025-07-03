@@ -29,6 +29,10 @@ vim.api.nvim_create_user_command("GitSyncMatch", function()
 	gitsync.match()
 end, { desc = "Checking if local project root has a remote" })
 
+vim.api.nvim_create_user_command("GitSyncProject", function()
+	gitsync.sync_project()
+end, { desc = "Sync local project to remote" })
+
 ---------------------------------------------------------------------------
 --- Outdated functions ---
 

@@ -33,7 +33,6 @@ function M.open()
 		"-p",
 		"6667",
 	}
-	vim.notify(master_socket_path_template)
 
 	-- for graceful shutdown
 	tunnel_job = vim.fn.jobstart(ssh_cmd, {

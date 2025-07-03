@@ -3,6 +3,7 @@ local M = {}
 
 --- 127.0.0.1:6666
 -- Default configuration
+-- outdated
 local config = {
 	remote_user = "devuser",
 	remote_host = "127.0.0.1",
@@ -10,6 +11,8 @@ local config = {
 	remote_dir = "~",
 }
 
+--- 127.0.0.1:6667
+--- Default configuration
 M.settings = {
 	remote_user = "devuser",
 	remote_host = "127.0.0.1",
