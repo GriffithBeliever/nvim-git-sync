@@ -187,18 +187,18 @@ function M.unison_sync()
 		return false
 	end
 
-	-- local unison_excludes = {
-	-- 	"Name .git", -- Exclude .git directories
-	-- 	"Name node_modules",
-	-- 	"Name target",
-	-- 	"Name build",
-	-- 	"Name __pycache__",
-	-- 	"Path *.swp", -- Exclude specific file types anywhere in path
-	-- 	"Path *.bak",
-	-- 	"Path *.log",
-	-- 	"Name .DS_Store",
-	-- 	-- Add more as needed, e.g., "Path .nvim/" to ignore a Neovim config directory
-	-- }
+	local unison_excludes = {
+		'"Name .git"', -- Exclude .git directories
+		'"Name node_modules"',
+		'"Name target"',
+		'"Name build"',
+		'"Name __pycache__"',
+		'"Path *.swp"', -- Exclude specific file types anywhere in path
+		'"Path *.bak"',
+		'"Path *.log"',
+		'"Name .DS_Store"',
+		-- Add more as needed, e.g., "Path .nvim/" to ignore a Neovim config directory
+	}
 
 	local remote_user = config.get("remote_user")
 	local remote_host = config.get("remote_host")
@@ -212,9 +212,11 @@ function M.unison_sync()
 	-- This is the most robust way, especially if you switch to vim.fn.jobstart later.
 	local unison_args = {
 		"unison", -- The command itself
+		"-auto",
+		"-copyonconflict",
 		"-batch", -- Run in batch mode (no user interaction)
 		"-prefer",
-		local_path, -- For conflicts, prefer the local version
+		"newer", -- For conflicts, prefer the local version
 		-- "-owner", -- Preserve owner
 		-- "-group", -- Preserve group
 		-- "-perms", -- Preserve file permissions
@@ -224,16 +226,21 @@ function M.unison_sync()
 	}
 
 	-- Add exclude arguments
-	-- for _, pattern in ipairs(unison_excludes) do
-	-- 	table.insert(unison_args, "-ignore")
-	-- 	table.insert(unison_args, pattern)
-	-- end
+	for _, pattern in ipairs(unison_excludes) do
+		table.insert(unison_args, "-ignore")
+		table.insert(unison_args, pattern)
+	end
 
 	-- Add the local root directory
-	table.insert(unison_args, get_nvim_project_root())
+	local nvim_root = get_nvim_project_root()
+	table.insert(unison_args, nvim_root)
 
+	local local_root_name = vim.fn.fnamemodify(nvim_root, ":t")
 	-- Add the remote path as a Unison SSH URL
-	table.insert(unison_args, string.format("ssh://%s@%s//home/devuser/projects", remote_user, remote_host))
+	table.insert(
+		unison_args,
+		string.format("ssh://%s@%s//home/devuser/projects/%s", remote_user, remote_host, local_root_name)
+	)
 
 	-- Combine the table of arguments into a single string for io.popen
 	-- IMPORTANT: Add " 2>&1" to redirect stderr to stdout for full error capture

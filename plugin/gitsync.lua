@@ -17,6 +17,16 @@ vim.api.nvim_create_autocmd("VimEnter", {
 	end,
 })
 
+--- Run unison_sync on save
+vim.api.nvim_create_autocmd("BufWritePost", {
+	callback = function()
+		local ok, gitsync = pcall(require, "gitsync")
+		if ok then
+			gitsync.sync_project()
+		end
+	end,
+})
+
 vim.api.nvim_create_user_command("GitSyncConnect", function()
 	gitsync.open_tunnel()
 end, { desc = "Openning tunnel to remote" })
