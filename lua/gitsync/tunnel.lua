@@ -48,7 +48,7 @@ function M.open()
 		end,
 	})
 
-	config.set("master_socket_path", master_socket_path_template)
+	config.set("master_socket_path_template", master_socket_path_template)
 	vim.notify("[GitSync] SSH tunnel opened")
 end
 

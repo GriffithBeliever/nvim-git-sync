@@ -37,7 +37,8 @@ end
 --- Sync local project to remote
 function M.sync_project()
 	if tunnel.is_open() then
-		sync.sync_project()
+		-- sync.sync_project()
+		sync.unison_sync()
 	end
 end
 

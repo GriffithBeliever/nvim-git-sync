@@ -43,10 +43,10 @@ function M.sync_project()
 	local local_root_name = vim.fn.fnamemodify(nvim_root, ":t")
 	remote_project_path = remote_project_path .. "/" .. local_root_name
 
-	local master_template = config.get("master_socket_path")
 	local remote_user = config.get("remote_user")
 	local remote_host = config.get("remote_host")
 	local remote_port = config.get("remote_port")
+	local master_template = config.get("master_socket_path")
 	local master_socket_path = get_master_path_from_template(master_template, remote_user, remote_host, remote_port)
 
 	-- Verify the master socket file exists before attempting rsync
@@ -124,7 +124,6 @@ end
 function M.is_project_match()
 	local local_root = get_nvim_project_root()
 	local remote_project_path = config.get("remote_project_path")
-	local master_socket_path = config.get("master_socket_path")
 
 	if not local_root or not remote_project_path then
 		vim.notify(
@@ -134,6 +133,7 @@ function M.is_project_match()
 		return false
 	end
 
+	local master_socket_path = config.get("master_socket_path_template")
 	if not master_socket_path then
 		vim.notify(
 			"[GitSync] SSH ControlMaster socket details not found. Is the tunnel master running?",
@@ -175,6 +175,99 @@ function M.is_project_match()
 
 	vim.notify("[GitSync] No matching project found remotely", vim.log.levels.WARN)
 	return false
+end
+
+function M.unison_sync()
+	local master_socket_path_template = config.get("master_socket_path_template")
+	if not master_socket_path_template then
+		vim.notify(
+			"[GitSync] SSH ControlMaster socket details not found. Is the tunnel master running?",
+			vim.log.levels.ERROR
+		)
+		return false
+	end
+
+	-- local unison_excludes = {
+	-- 	"Name .git", -- Exclude .git directories
+	-- 	"Name node_modules",
+	-- 	"Name target",
+	-- 	"Name build",
+	-- 	"Name __pycache__",
+	-- 	"Path *.swp", -- Exclude specific file types anywhere in path
+	-- 	"Path *.bak",
+	-- 	"Path *.log",
+	-- 	"Name .DS_Store",
+	-- 	-- Add more as needed, e.g., "Path .nvim/" to ignore a Neovim config directory
+	-- }
+
+	local remote_user = config.get("remote_user")
+	local remote_host = config.get("remote_host")
+	local remote_port = config.get("remote_port")
+
+	local master_template = config.get("master_socket_path_template")
+	local master_socket_path = get_master_path_from_template(master_template, remote_user, remote_host, remote_port)
+
+	local local_path = vim.fn.getcwd()
+	-- Build the Unison command as a table of arguments.
+	-- This is the most robust way, especially if you switch to vim.fn.jobstart later.
+	local unison_args = {
+		"unison", -- The command itself
+		"-batch", -- Run in batch mode (no user interaction)
+		"-prefer",
+		local_path, -- For conflicts, prefer the local version
+		-- "-owner", -- Preserve owner
+		-- "-group", -- Preserve group
+		-- "-perms", -- Preserve file permissions
+		"-times", -- Preserve modification times
+		"-sshargs", -- The next argument is for ssh
+		string.format('"-S %s"', master_socket_path), -- The SSH socket argument
+	}
+
+	-- Add exclude arguments
+	-- for _, pattern in ipairs(unison_excludes) do
+	-- 	table.insert(unison_args, "-ignore")
+	-- 	table.insert(unison_args, pattern)
+	-- end
+
+	-- Add the local root directory
+	table.insert(unison_args, get_nvim_project_root())
+
+	-- Add the remote path as a Unison SSH URL
+	table.insert(unison_args, string.format("ssh://%s@%s//home/devuser/projects", remote_user, remote_host))
+
+	-- Combine the table of arguments into a single string for io.popen
+	-- IMPORTANT: Add " 2>&1" to redirect stderr to stdout for full error capture
+	local unison_cmd_string = table.concat(unison_args, " ") .. " 2>&1"
+
+	vim.notify(unison_cmd_string)
+
+	vim.notify("[GitSync] Executing unison command: " .. unison_cmd_string, vim.log.levels.INFO)
+	local handle = io.popen(unison_cmd_string)
+	if not handle then
+		vim.notify("[GitSync] Failed to execute unison command via io.popen.", vim.log.levels.ERROR)
+		return false
+	end
+
+	local unison_output = handle:read("*a")
+	local exit_code, reason, status = handle:close()
+
+	if exit_code == 0 then
+		vim.notify("[GitSync] Project sync successful with Unison!", vim.log.levels.INFO)
+		vim.notify("Unison Output:\n" .. unison_output, vim.log.levels.DEBUG)
+		return true
+	else
+		vim.notify(
+			string.format(
+				"[GitSync] Project sync FAILED with Unison (exit code: %s, reason: %s, status: %s)",
+				tostring(exit_code),
+				tostring(reason),
+				tostring(status)
+			),
+			vim.log.levels.ERROR
+		)
+		vim.notify("Unison Output (errors/warnings):\n" .. unison_output, vim.log.levels.ERROR)
+		return false
+	end
 end
 
 return M

@@ -21,7 +21,7 @@ M.settings = {
 	auto_connect = false,
 	reconnect_interval = 15000,
 	remote_project_path = "~/projects", -- Configure the path to the project folder
-	master_socket_path = nil,
+	master_socket_path_template = nil,
 }
 
 function M.get(key)
